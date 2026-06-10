@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>متجر بصمة ثلاثية الأبعاد</title>
+    <meta
+      name="description"
+      content="متجر بسيط لعرض وبيع المجسمات ثلاثية الأبعاد مع إرسال الطلب عبر واتساب."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- ===== الترويسة ===== -->
+    <header class="site-header">
+      <div class="container header-inner">
+        <div class="brand">
+          <span id="brandLogo" class="brand-logo" aria-hidden="true">🧊</span>
+          <div class="brand-text">
+            <h1 id="brandTitle">متجر بصمة</h1>
+            <p id="brandTagline">تصاميم ثلاثية الأبعاد</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <!-- مخفي افتراضيًا — يظهر فقط عند الدخول عبر رابط الإدارة (#admin) -->
+          <button
+            id="adminToggleBtn"
+            class="btn btn-ghost"
+            type="button"
+            title="وضع الإدارة"
+            hidden
+          >
+            <span aria-hidden="true">⚙️</span>
+            <span class="btn-label">الإدارة</span>
+          </button>
+          <button
+            id="cartToggleBtn"
+            class="btn btn-cart"
+            type="button"
+            title="السلة"
+          >
+            <span aria-hidden="true">🛒</span>
+            <span class="btn-label">السلة</span>
+            <span id="cartBadge" class="cart-badge" hidden>0</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== شريط الإدارة (يظهر في وضع الإدارة فقط) ===== -->
+    <div id="adminBar" class="admin-bar" hidden>
+      <div class="container admin-bar-inner">
+        <span class="admin-flag">🛠️ وضع الإدارة مُفعّل</span>
+        <div class="admin-bar-actions">
+          <button
+            id="addProductBtn"
+            class="btn btn-primary btn-sm"
+            type="button"
+          >
+            + إضافة منتج
+          </button>
+          <button
+            id="siteSettingsBtn"
+            class="btn btn-outline btn-sm"
+            type="button"
+            title="تعديل اسم الموقع والشعار"
+          >
+            ⚙️ إعدادات الموقع
+          </button>
+          <button
+            id="exportBtn"
+            class="btn btn-outline btn-sm"
+            type="button"
+            title="نزّل ملف products.json وارفعه على GitHub لحفظ التعديلات للجميع"
+          >
+            ⬇️ تصدير المنتجات
+          </button>
+          <button
+            id="resetBtn"
+            class="btn btn-outline btn-sm"
+            type="button"
+            title="إلغاء التعديلات المحلية والرجوع لملف products.json"
+          >
+            ↺ استرجاع
+          </button>
+          <button id="adminExitBtn" class="btn btn-ghost btn-sm" type="button">
+            خروج
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== المحتوى ===== -->
+    <main class="container main">
+      <section class="hero">
+        <h2>اختر مجسمك المفضّل</h2>
+        <p>
+          تصفّح المجسمات، أضِف ما يعجبك إلى السلة، ثم أرسل طلبك مباشرةً عبر
+          واتساب.
+        </p>
+      </section>
+
+      <section aria-label="المنتجات">
+        <div id="productsGrid" class="products-grid">
+          <!-- تُملأ ديناميكيًا -->
+        </div>
+        <p id="emptyState" class="empty-state" hidden>
+          لا توجد منتجات متاحة حاليًا.
+        </p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>
+          © <span id="year"></span> <span id="footerStore">متجر بصمة ثلاثية الأبعاد</span>
+          — جميع الطلبات تُرسل عبر واتساب.
+        </p>
+      </div>
+    </footer>
+
+    <!-- ===== لوحة السلة الجانبية ===== -->
+    <div id="cartOverlay" class="overlay" hidden></div>
+    <aside id="cartPanel" class="cart-panel" hidden aria-label="سلة الطلب">
+      <div class="cart-head">
+        <h3>سلة الطلب</h3>
+        <button
+          id="cartCloseBtn"
+          class="icon-btn"
+          type="button"
+          aria-label="إغلاق"
+        >
+          ✕
+        </button>
+      </div>
+      <div id="cartItems" class="cart-items"><!-- ديناميكي --></div>
+      <p id="cartEmpty" class="cart-empty">سلتك فارغة. اختر مجسمًا لإضافته.</p>
+      <div class="cart-foot">
+        <div class="cart-total">
+          <span>الإجمالي</span>
+          <strong id="cartTotal">0 ر.ع</strong>
+        </div>
+        <button
+          id="sendOrderBtn"
+          class="btn btn-whatsapp btn-block"
+          type="button"
+          disabled
+        >
+          <span aria-hidden="true"></span>
+          إرسال الطلب عبر واتساب
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== نافذة إضافة/تعديل منتج ===== -->
+    <div id="modalOverlay" class="overlay" hidden></div>
+    <div
+      id="productModal"
+      class="modal"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modalTitle"
+    >
+      <div class="modal-head">
+        <h3 id="modalTitle">إضافة منتج</h3>
+        <button
+          id="modalCloseBtn"
+          class="icon-btn"
+          type="button"
+          aria-label="إغلاق"
+        >
+          ✕
+        </button>
+      </div>
+      <form id="productForm" class="modal-body" novalidate>
+        <input type="hidden" id="fieldId" />
+        <label class="field">
+          <span>اسم المنتج <em>*</em></span>
+          <input
+            type="text"
+            id="fieldName"
+            required
+            maxlength="80"
+            placeholder="مثال: مجسم برج خليفة"
+          />
+        </label>
+        <label class="field">
+          <span>الوصف</span>
+          <textarea
+            id="fieldDescription"
+            rows="3"
+            maxlength="400"
+            placeholder="وصف مختصر للمجسم..."
+          ></textarea>
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>السعر (ر.ع) <em>*</em></span>
+            <input
+              type="number"
+              id="fieldPrice"
+              required
+              min="0"
+              step="0.001"
+              placeholder="0.000"
+            />
+          </label>
+          <label class="field">
+            <span>كود المنتج</span>
+            <input
+              type="text"
+              id="fieldCode"
+              maxlength="40"
+              placeholder="مثال: BK-001"
+            />
+          </label>
+        </div>
+        <label class="field">
+          <span>صور المنتج (يمكنك اختيار أكثر من صورة)</span>
+          <input type="file" id="fieldImageFile" accept="image/*" multiple />
+        </label>
+        <div id="imagesPreview" class="images-preview" hidden>
+          <!-- معاينات الصور تُملأ ديناميكيًا -->
+        </div>
+        <details class="adv-field">
+          <summary>خيارات متقدمة (أيقونة / إضافة صورة برابط)</summary>
+          <label class="field" style="margin-top: 12px">
+            <span>أيقونة بديلة (تظهر إن لم توجد صور)</span>
+            <input
+              type="text"
+              id="fieldEmoji"
+              maxlength="4"
+              placeholder="🧊"
+            />
+          </label>
+          <label class="field" style="margin-top: 12px">
+            <span>إضافة صورة برابط</span>
+            <span class="url-add">
+              <input
+                type="url"
+                id="fieldImageUrl"
+                placeholder="https://..."
+              />
+              <button
+                type="button"
+                id="addImageUrlBtn"
+                class="btn btn-outline btn-sm"
+              >
+                إضافة
+              </button>
+            </span>
+          </label>
+        </details>
+        <p id="formError" class="form-error" hidden></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+          <button type="button" id="modalCancelBtn" class="btn btn-ghost">
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ===== نافذة إعدادات الموقع ===== -->
+    <div id="settingsOverlay" class="overlay" hidden></div>
+    <div
+      id="settingsModal"
+      class="modal"
+      hidden
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settingsTitle"
+    >
+      <div class="modal-head">
+        <h3 id="settingsTitle">إعدادات الموقع</h3>
+        <button
+          id="settingsCloseBtn"
+          class="icon-btn"
+          type="button"
+          aria-label="إغلاق"
+        >
+          ✕
+        </button>
+      </div>
+      <form id="settingsForm" class="modal-body" novalidate>
+        <label class="field">
+          <span>اسم الموقع <em>*</em></span>
+          <input
+            type="text"
+            id="fieldStoreName"
+            required
+            maxlength="60"
+            placeholder="مثال: متجر بصمة ثلاثية الأبعاد"
+          />
+        </label>
+        <label class="field">
+          <span>الوصف / الشعار النصي</span>
+          <input
+            type="text"
+            id="fieldTagline"
+            maxlength="80"
+            placeholder="مثال: تصاميم ثلاثية الأبعاد"
+          />
+        </label>
+        <label class="field">
+          <span>شعار الموقع (ارفع صورة من جهازك)</span>
+          <input type="file" id="fieldLogoFile" accept="image/*" />
+        </label>
+        <div id="logoPreviewWrap" class="image-preview" hidden>
+          <img id="logoPreview" alt="معاينة الشعار" />
+          <button type="button" id="removeLogoBtn" class="btn btn-ghost btn-sm">
+            إزالة الشعار
+          </button>
+        </div>
+        <details class="adv-field">
+          <summary>أو استخدم أيقونة (إيموجي) بدل الصورة</summary>
+          <label class="field" style="margin-top: 12px">
+            <span>أيقونة الشعار</span>
+            <input
+              type="text"
+              id="fieldLogoEmoji"
+              maxlength="4"
+              placeholder="🧊"
+            />
+          </label>
+        </details>
+        <p id="settingsError" class="form-error" hidden></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">حفظ</button>
+          <button
+            type="button"
+            id="exportSettingsBtn"
+            class="btn btn-outline"
+            title="نزّل settings.json وارفعه على GitHub لتثبيت الاسم والشعار للجميع"
+          >
+            ⬇️ تصدير
+          </button>
+          <button type="button" id="settingsCancelBtn" class="btn btn-ghost">
+            إلغاء
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- إشعار صغير -->
+    <div id="toast" class="toast" hidden></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
