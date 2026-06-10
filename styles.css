@@ -63,6 +63,9 @@ body {
 .btn-cart:hover { background: rgba(255, 255, 255, .12); }
 .btn-whatsapp { background: var(--whatsapp); color: #073b1e; font-size: 1.05rem; padding: 14px; }
 .btn-whatsapp:hover:not(:disabled) { filter: brightness(1.05); }
+.btn-publish { background: var(--accent); color: #04302d; }
+.btn-publish:hover:not(:disabled) { filter: brightness(1.06); }
+.btn-publish.is-busy { opacity: .7; pointer-events: none; }
 
 .icon-btn {
   background: transparent; border: none; color: var(--muted);
@@ -248,6 +251,11 @@ body.admin-mode .admin-tools { display: flex; }
 /* إضافة صورة برابط (حقل + زر) */
 .url-add { display: flex; gap: 8px; }
 .url-add input { flex: 1; }
+
+/* قسم رمز النشر إلى GitHub */
+.gh-section { border-top: 1px dashed var(--border); padding-top: 14px; display: flex; flex-direction: column; gap: 6px; }
+.gh-hint { color: var(--muted); font-size: .8rem; margin: 0; line-height: 1.5; }
+.gh-hint code { background: var(--surface-2); padding: 1px 6px; border-radius: 5px; }
 
 /* الخيارات المتقدمة */
 .adv-field { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--surface); }

@@ -60,6 +60,14 @@
         <span class="admin-flag">🛠️ وضع الإدارة مُفعّل</span>
         <div class="admin-bar-actions">
           <button
+            id="publishBtn"
+            class="btn btn-publish btn-sm"
+            type="button"
+            title="حفظ التعديلات على GitHub لتظهر لكل الأجهزة"
+          >
+            ⬆️ نشر التعديلات
+          </button>
+          <button
             id="addProductBtn"
             class="btn btn-primary btn-sm"
             type="button"
@@ -332,6 +340,23 @@
             />
           </label>
         </details>
+
+        <div class="gh-section">
+          <label class="field">
+            <span>رمز النشر إلى GitHub (يُحفظ في هذا الجهاز فقط) 🔒</span>
+            <input
+              type="password"
+              id="fieldGhToken"
+              autocomplete="off"
+              placeholder="ghp_... أو github_pat_..."
+            />
+          </label>
+          <p class="gh-hint">
+            لازم لزر «نشر التعديلات». أنشئ رمزًا بصلاحية Contents (read/write) لمستودع
+            <code>basma-3d</code> فقط، والصقه هنا. لا يُرفع مع الموقع ولا يظهر للزوار.
+          </p>
+        </div>
+
         <p id="settingsError" class="form-error" hidden></p>
         <div class="modal-actions">
           <button type="submit" class="btn btn-primary">حفظ</button>

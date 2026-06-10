@@ -9,6 +9,8 @@ const CONFIG = {
   priceDecimals: 3,                    // عدد المنازل العشرية للسعر
   adminPassword: "admin",              // كلمة مرور دخول وضع الإدارة (غيّرها)
   storeName: "متجر بصمة ثلاثية الأبعاد",
+  // مستودع GitHub لزر «نشر التعديلات» (يحفظ products.json / settings.json مباشرة)
+  github: { owner: "alkindi990", repo: "basma-3d", branch: "main" },
 };
 
 /* ====== قائمة افتراضية احتياطية ======
@@ -30,7 +32,7 @@ const DEFAULT_SETTINGS = {
   logo: "🧊", // إيموجي أو رابط/صورة (data URL)
 };
 
-const STORAGE_KEYS = { products: "d3_products", cart: "d3_cart", settings: "d3_settings" };
+const STORAGE_KEYS = { products: "d3_products", cart: "d3_cart", settings: "d3_settings", ghToken: "d3_gh_token" };
 
 /* ====== الحالة ====== */
 let products = [];          // قائمة المنتجات
@@ -711,6 +713,7 @@ function openSettingsModal() {
   $("#settingsError").hidden = true;
   $("#fieldStoreName").value = settings.storeName || "";
   $("#fieldTagline").value = settings.tagline || "";
+  $("#fieldGhToken").value = localStorage.getItem(STORAGE_KEYS.ghToken) || "";
   $("#fieldLogoFile").value = "";
   settingsLogo = settings.logo || "🧊";
   if (isImageSrc(settingsLogo)) {
@@ -771,6 +774,14 @@ function handleSettingsSubmit(event) {
   settings = { storeName, tagline: $("#fieldTagline").value.trim(), logo };
   persistSettings();
   applySettings();
+
+  // رمز النشر يُخزَّن منفصلًا في هذا الجهاز فقط (لا يدخل ضمن settings.json المنشور)
+  const token = $("#fieldGhToken").value.trim();
+  try {
+    if (token) localStorage.setItem(STORAGE_KEYS.ghToken, token);
+    else localStorage.removeItem(STORAGE_KEYS.ghToken);
+  } catch (e) { /* تجاهل */ }
+
   closeSettingsModal();
   showToast("تم حفظ إعدادات الموقع");
 }
@@ -789,6 +800,75 @@ function exportSettings() {
   showToast("تم تنزيل settings.json — ارفعه على GitHub لتثبيت الاسم والشعار للجميع");
 }
 
+/* ====== النشر إلى GitHub (حفظ مباشر للملفات) ====== */
+// ترميز نص UTF-8 (يدعم العربية) إلى Base64 لرفعه عبر GitHub API
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = "";
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+
+async function putFileToGitHub(token, path, contentStr, message) {
+  const { owner, repo, branch } = CONFIG.github;
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}`;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+
+  // احصل على sha الحالي للملف (إن وُجد) للتحديث فوقه
+  let sha;
+  const getRes = await fetch(`${apiUrl}?ref=${branch}`, { headers, cache: "no-store" });
+  if (getRes.ok) {
+    const info = await getRes.json();
+    sha = info.sha;
+  } else if (getRes.status === 401) {
+    throw new Error("الرمز غير صالح أو منتهي الصلاحية");
+  } else if (getRes.status !== 404) {
+    throw new Error(`تعذّر قراءة ${path} (${getRes.status})`);
+  }
+
+  const body = { message, content: utf8ToBase64(contentStr), branch };
+  if (sha) body.sha = sha;
+
+  const putRes = await fetch(apiUrl, { method: "PUT", headers, body: JSON.stringify(body) });
+  if (!putRes.ok) {
+    if (putRes.status === 401) throw new Error("الرمز غير صالح أو منتهي الصلاحية");
+    if (putRes.status === 403 || putRes.status === 404) throw new Error("الرمز لا يملك صلاحية الكتابة على المستودع");
+    let detail = "";
+    try { detail = (await putRes.json()).message || ""; } catch (e) {}
+    throw new Error(`تعذّر نشر ${path} (${putRes.status}) ${detail}`);
+  }
+}
+
+async function publishToGitHub() {
+  const token = (localStorage.getItem(STORAGE_KEYS.ghToken) || "").trim();
+  if (!token) {
+    showToast("أضِف رمز النشر من «⚙️ إعدادات الموقع» أولًا");
+    openSettingsModal();
+    setTimeout(() => $("#fieldGhToken").focus(), 50);
+    return;
+  }
+
+  const btn = $("#publishBtn");
+  btn.classList.add("is-busy");
+  btn.textContent = "⏳ جارٍ النشر...";
+  showToast("جارٍ النشر إلى GitHub...");
+
+  try {
+    await putFileToGitHub(token, "products.json", JSON.stringify(products, null, 2), "تحديث المنتجات عبر لوحة الإدارة");
+    await putFileToGitHub(token, "settings.json", JSON.stringify(settings, null, 2), "تحديث إعدادات الموقع عبر لوحة الإدارة");
+    showToast("تم النشر ✅ ستظهر التعديلات لكل الأجهزة خلال ~دقيقة");
+  } catch (err) {
+    showToast("فشل النشر: " + (err.message || "خطأ غير معروف"));
+  } finally {
+    btn.classList.remove("is-busy");
+    btn.textContent = "⬆️ نشر التعديلات";
+  }
+}
+
 /* ====== رابط الإدارة الخاص (#admin) ====== */
 function maybeRevealAdmin() {
   const hash = (location.hash || "").replace("#", "").toLowerCase();
@@ -802,6 +882,7 @@ function maybeRevealAdmin() {
 function bindEvents() {
   $("#adminToggleBtn").addEventListener("click", toggleAdmin);
   $("#adminExitBtn").addEventListener("click", exitAdmin);
+  $("#publishBtn").addEventListener("click", publishToGitHub);
   $("#addProductBtn").addEventListener("click", () => openProductModal(null));
   $("#exportBtn").addEventListener("click", exportProducts);
   $("#resetBtn").addEventListener("click", resetProducts);
